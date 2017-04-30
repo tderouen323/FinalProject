@@ -287,21 +287,19 @@ def optimize(num_iterations):
     total_iterations += num_iterations
 
 def plot_example_errors(cls_pred, correct):
-
-    # cls_pred is an array of the predicted class-number for
-    # all images in the test-set.
-
+ 
+    # Negate the boolean array.
     incorrect = (correct == False)
     
     # Get the images from the test-set that have been
     # incorrectly classified.
-    images = data.test.images[incorrect]
+    images = data1.train.images[incorrect]
     
     # Get the predicted classes for those images.
     cls_pred = cls_pred[incorrect]
 
     # Get the true classes for those images.
-    cls_true = data.test.cls[incorrect]
+    cls_true = data1.train.cls[incorrect]
     
     # Plot the first 9 images.
     plot_images(images=images[0:9],
