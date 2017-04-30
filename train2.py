@@ -26,10 +26,10 @@ num_filters3 = 64
 # Fully-connected layer.
 fc_size = 128             # Number of neurons in fully-connected layer.
 
-# Number of color channels for the images: 1 channel for gray-scale.
+# Number of color channels for the images. 3 for RGB.
 num_channels = 3
 
-# image dimensions
+# image pixel dimensions
 img_size = 128
 
 # Size of image when flattened to a single dimension
@@ -46,26 +46,20 @@ num_classes = len(classes)
 # batch size
 batch_size = 16
 
-# validation split
+# validation split, 20%
 validation_size = .2
 
-# how long to wait after validation loss stops improving before terminating training
-early_stopping = None  # use None if you don't want to implement early stoping
-
+#paths to dataset on my personal computer
 train_path='/Users/Tatiana/Desktop/CNN/training_data/'
 test_path='/Users/Tatiana/Desktop/CNN/testing_data/'
 
 
 data = dataset.read_train_sets(train_path, img_size, classes, validation_size=validation_size)
 data1 = dataset.read_train_sets(test_path, img_size, classes)
-#test_images, test_ids = dataset.read_test_set(test_path, img_size, classes)
-#dimages, dlabels= dataset.load_test(test_path='/Users/Tatiana/Desktop/CNN/testing_data/', image_size=128, classes = ['disease'])
-#himages, hlabels = dataset.load_test(test_path='/Users/Tatiana/Desktop/CNN/testing_data/', image_size=128, classes = ['healthy'])
 
-print("Size of:")
-print("- Training-set:\t\t{}".format(len(data.train.labels)))
-print("- Test-set:\t\t{}".format(len(data1.train.labels)))
-print("- Validation-set:\t{}".format(len(data.valid.labels)))
+print("Training-set:\t\t{}".format(len(data.train.labels)))
+print("Validation set:\t{}".format(len(data.valid.labels)))
+print("Test set:\t\t{}".format(len(data1.train.labels)))
 
 def plot_images(images, cls_true, cls_pred=None):
     
@@ -91,11 +85,12 @@ def plot_images(images, cls_true, cls_pred=None):
     
     plt.show()
     
-# Get some random images and their labels from the train set.
+
 images, cls_true  = data.train.images, data.train.cls
 # Plot the images and labels using our helper-function above.
 plot_images(images=images, cls_true=cls_true)
 
+#Helper functions:
 def new_weights(shape):
     return tf.Variable(tf.truncated_normal(shape, stddev=0.05))
 
@@ -218,9 +213,9 @@ layer_fc2 = new_fc_layer(input=layer_fc1,
                      
 y_pred = tf.nn.softmax(layer_fc2)
 
-print(y_pred)
+
 y_pred_cls = tf.argmax(y_pred, dimension=1)
-print(y_pred_cls)
+
 
 cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits=layer_fc2,
                                                     labels=y_true)
@@ -250,7 +245,7 @@ def print_progress(epoch, feed_dict_train, feed_dict_validate, val_loss):
 total_iterations = 0
 
 def optimize(num_iterations):
-    # Ensure we update the global variable rather than a local copy.
+   
     global total_iterations
 
     best_val_loss = float("inf")
@@ -258,19 +253,16 @@ def optimize(num_iterations):
     for i in range(total_iterations,
                    total_iterations + num_iterations):
 
-        # Get a batch of training examples.
-        # x_batch now holds a batch of images and
-        # y_true_batch are the true labels for those images.
+ 
         x_batch, y_true_batch, _, cls_batch = data.train.next_batch(train_batch_size)
         x_valid_batch, y_valid_batch, _, valid_cls_batch = data.valid.next_batch(train_batch_size)
        
-        # Convert shape from [num examples, rows, columns, depth]
-        # to [num examples, flattened image shape]
+        # Convert shape from [num examples, rows, columns, depth] to [num examples, flattened image shape]
         x_batch = x_batch.reshape(train_batch_size, img_size_flat)
         x_valid_batch = x_valid_batch.reshape(train_batch_size, img_size_flat)
         
-        # Put the batch into a dict with the proper names
-        # for placeholder variables in the TensorFlow graph.
+        # Dictionary for batch placeholder variables
+       
         feed_dict_train = {x: x_batch,
                            y_true: y_true_batch}
         
@@ -279,13 +271,11 @@ def optimize(num_iterations):
                               
          
 
-        # Run the optimizer using this batch of training data.
-        # TensorFlow assigns the variables in feed_dict_train
-        # to the placeholder variables and then runs the optimizer.
+        # Optimizer run on session.
         session.run(optimizer, feed_dict=feed_dict_train)
         
 
-        # Print status at end of each epoch (defined as full pass through training dataset).
+        # Print status at end of each epoch
         if i % int(data.train.num_examples/batch_size) == 0: 
             val_loss = session.run(cost, feed_dict=feed_dict_validate)
             epoch = int(i / int(data.train.num_examples/batch_size))
@@ -297,15 +287,10 @@ def optimize(num_iterations):
     total_iterations += num_iterations
 
 def plot_example_errors(cls_pred, correct):
-    # This function is called from print_test_accuracy() below.
 
     # cls_pred is an array of the predicted class-number for
     # all images in the test-set.
 
-    # correct is a boolean array whether the predicted class
-    # is equal to the true class for each image in the test-set.
-
-    # Negate the boolean array.
     incorrect = (correct == False)
     
     # Get the images from the test-set that have been
@@ -322,53 +307,17 @@ def plot_example_errors(cls_pred, correct):
     plot_images(images=images[0:9],
                 cls_true=cls_true[0:9],
                 cls_pred=cls_pred[0:9])
-                
-def plot_confusion_matrix(cls_pred):
-    # This is called from print_test_accuracy() below.
 
-    # cls_pred is an array of the predicted class-number for
-    # all images in the test-set.
-
-    # Get the true classifications for the test-set.
-    cls_true = data.test.cls
     
-    # Get the confusion matrix using sklearn.
-    cm = confusion_matrix(y_true=cls_true,
-                          y_pred=cls_pred)
-
-    # Print the confusion matrix as text.
-    print(cm)
-
-    # Plot the confusion matrix as an image.
-    plt.matshow(cm)
-
-    # Make various adjustments to the plot.
-    plt.colorbar()
-    tick_marks = np.arange(num_classes)
-    plt.xticks(tick_marks, range(num_classes))
-    plt.yticks(tick_marks, range(num_classes))
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-
-    # Ensure the plot is shown correctly with multiple plots
-    # in a single Notebook cell.
-    plt.show()
-    
-def print_validation_accuracy(show_example_errors=False,
-                        show_confusion_matrix=False):
+def print_validation_accuracy(show_example_errors=True):
     global x
     # Number of images in the test-set.
     num_test = len(data1.train.images)
-
-    # Allocate an array for the predicted classes which
-    # will be calculated in batches and filled into this array.
+    print(num_test)
+    
     cls_pred = np.zeros(shape=num_test, dtype=np.int)
-
-    # Now calculate the predicted classes for the batches.
-    # We will just iterate through all the batches.
-    # There might be a more clever and Pythonic way of doing this.
-
-    # The starting index for the next batch is denoted i.
+    print(cls_pred.shape)
+    #predicted classes obtained
     i = 0
 
     while i < num_test:
@@ -376,26 +325,27 @@ def print_validation_accuracy(show_example_errors=False,
         j = min(i + batch_size, num_test)
         
         # Get the images from the test-set between index i and j.
-        images = data1.train.images[i:j]
-        #images = images.shape(batch_size, img_size_flat)
-        # Get the associated labels.
-        labels = data1.train.labels[i:j]
+        images = data1.train.images[i:j, :]
+        images = np.reshape(images, (-1, 49152))
+        
+        labels = data1.train.labels[i:j, :]
 
-        # Create a feed-dict with these images and labels.
+        # dictionary
         feed_dict = {x: images,
                      y_true: labels}
         
         # Calculate the predicted class using TensorFlow.
         cls_pred[i:j] = session.run(y_pred_cls, feed_dict=feed_dict)
-
+        
         # Set the start-index for the next batch to the
         # end-index of the current batch.
         i = j
 
-    cls_true = np.array(data.valid.cls)
+    cls_true = np.array(data.train.cls)
     cls_pred = np.array([classes[x] for x in cls_pred]) 
-
-    # Create a boolean array whether each image is correctly classified.
+    
+    
+    
     correct = (cls_true == cls_pred)
 
     # Calculate the number of correctly classified images.
@@ -414,18 +364,8 @@ def print_validation_accuracy(show_example_errors=False,
     if show_example_errors:
         print("Example errors:")
         plot_example_errors(cls_pred=cls_pred, correct=correct)
-
-    # Plot the confusion matrix, if desired.
-    if show_confusion_matrix:
-        print("Confusion Matrix:")
-        plot_confusion_matrix(cls_pred=cls_pred)
+    
         
-        
-optimize(num_iterations=1)
-#print_validation_accuracy()
-
-optimize(num_iterations=900)
-#print_validation_accuracy()
 
 optimize(num_iterations=9000)
-#print_validation_accuracy()
+print_validation_accuracy()
